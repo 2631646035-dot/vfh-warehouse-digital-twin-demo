@@ -1,0 +1,320 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#07111b">
+  <title>Warehouse Studio · 海外仓仿真工作台</title>
+  <link rel="stylesheet" href="/static/styles.css">
+  <script type="importmap">
+    {"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}
+  </script>
+  <script type="module" src="/static/app.js"></script>
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <div class="brand">
+        <span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i></span>
+        <div><strong>WAREHOUSE STUDIO</strong><span>Europe Demo · 方案仿真工作台</span></div>
+      </div>
+      <div class="center-actions">
+        <div class="screen-switch" aria-label="选择工作台">
+          <button class="screen-button active" data-screen="warehouse">3D仿真</button>
+          <button class="screen-button" data-screen="decision">VFH决策</button>
+        </div>
+        <div class="zone-switch" aria-label="选择仓区">
+          <button class="zone-button active" data-zone="A"><span>A</span> 货主仓</button>
+          <button class="zone-button" data-zone="B"><span>B</span> 前置仓</button>
+          <button class="zone-button" data-zone="ALL"><span>◎</span> 全链路</button>
+        </div>
+      </div>
+      <div class="top-actions">
+        <button class="ghost-button" id="reset-view">重置视角</button>
+        <button class="ghost-button" id="open-sku"><span class="button-dot"></span>SKU 数据库</button>
+        <button class="primary-button" id="run-simulation">运行仿真</button>
+      </div>
+    </header>
+
+    <main class="workspace">
+      <aside class="control-panel" aria-label="方案参数">
+        <div class="panel-intro">
+          <p class="overline">SCENARIO / <span id="zone-code">A</span></p>
+          <h1 id="zone-title">A区 · 货主自营仓</h1>
+          <p>调整参数后可即时重建3D布局，并运行8小时作业仿真。</p>
+        </div>
+
+        <form id="settings-form">
+          <section class="control-section">
+            <button type="button" class="section-title" aria-expanded="true">空间与布局 <span>−</span></button>
+            <div class="section-body">
+              <div class="field-grid">
+                <label>仓库宽度<div class="input-wrap"><input data-field="warehouse_width_m" type="number" min="10" max="250" step="1"><span>m</span></div></label>
+                <label>仓库深度<div class="input-wrap"><input data-field="warehouse_depth_m" type="number" min="10" max="250" step="1"><span>m</span></div></label>
+              </div>
+              <label class="range-field"><span>地堆占比 <b data-output="floor_percent">0%</b></span><input data-field="floor_percent" type="range" min="0" max="60" step="1"></label>
+              <label class="range-field"><span>过道占比 <b data-output="aisle_percent">0%</b></span><input data-field="aisle_percent" type="range" min="10" max="60" step="1"></label>
+              <div class="allocation-bar" aria-label="面积分配"><i class="rack-share"></i><i class="floor-share"></i><i class="aisle-share"></i></div>
+              <div class="allocation-legend"><span><i class="rack"></i>货架区</span><span><i class="floor"></i>地堆</span><span><i class="aisle"></i>过道</span></div>
+            </div>
+          </section>
+
+          <section class="control-section">
+            <button type="button" class="section-title" aria-expanded="true">货架规格 <span>−</span></button>
+            <div class="section-body">
+              <div class="field-grid">
+                <label>单跨宽度<div class="input-wrap"><input data-field="shelf_width_m" type="number" min="1" max="6" step="0.1"><span>m</span></div></label>
+                <label>货架深度<div class="input-wrap"><input data-field="shelf_depth_m" type="number" min="0.5" max="3" step="0.1"><span>m</span></div></label>
+                <label>单层高度<div class="input-wrap"><input data-field="shelf_height_m" type="number" min="0.5" max="4" step="0.1"><span>m</span></div></label>
+                <label>货架层数<div class="input-wrap"><input data-field="shelf_levels" type="number" min="1" max="10" step="1"><span>层</span></div></label>
+              </div>
+            </div>
+          </section>
+
+          <section class="control-section">
+            <button type="button" class="section-title" aria-expanded="true">作业资源 <span>−</span></button>
+            <div class="section-body">
+              <div class="field-grid">
+                <label>作业人数<div class="input-wrap"><input data-field="workers" type="number" min="1" max="200" step="1"><span>人</span></div></label>
+                <label>叉车数量<div class="input-wrap"><input data-field="forklifts" type="number" min="1" max="50" step="1"><span>台</span></div></label>
+              </div>
+              <label class="range-field"><span>人员效率 <b data-output="labor_efficiency">0%</b></span><input data-field="labor_efficiency" type="range" min="20" max="150" step="1"></label>
+              <label class="range-field"><span>叉车效率 <b data-output="forklift_efficiency">0%</b></span><input data-field="forklift_efficiency" type="range" min="20" max="150" step="1"></label>
+            </div>
+          </section>
+
+          <section class="control-section">
+            <button type="button" class="section-title" aria-expanded="true">业务负荷 <span>−</span></button>
+            <div class="section-body">
+              <div class="field-grid">
+                <label>入库托/日<div class="input-wrap"><input data-field="inbound_pallets_day" type="number" min="0" max="10000" step="1"><span>托</span></div></label>
+                <label>出库单/日<div class="input-wrap"><input data-field="outbound_orders_day" type="number" min="0" max="50000" step="10"><span>单</span></div></label>
+                <label>平均行数<div class="input-wrap"><input data-field="avg_lines_order" type="number" min="1" max="50" step="0.1"><span>行</span></div></label>
+                <label>随机种子<div class="input-wrap"><input id="seed" type="number" min="0" max="1000000" value="42"><span>#</span></div></label>
+              </div>
+            </div>
+          </section>
+
+          <section class="control-section decision-control">
+            <button type="button" class="section-title" aria-expanded="true">VFH决策范围 <span>−</span></button>
+            <div class="section-body">
+              <div class="field-grid">
+                <label>国家<div class="input-wrap"><input data-vfh-field="country" type="text" maxlength="100"></div></label>
+                <label>币种<div class="input-wrap"><select data-vfh-field="currency"><option value="EUR">EUR</option><option value="GBP">GBP</option><option value="USD">USD</option><option value="CAD">CAD</option></select></div></label>
+                <label>决策阶段<div class="input-wrap"><select data-vfh-field="scenario_mode"><option value="planning">计划建立</option><option value="existing">已建立</option><option value="without_vfh">仅评估现状</option></select></div></label>
+                <label>数据密度<div class="input-wrap"><select data-vfh-field="data_density"><option value="detailed">详细数据</option><option value="warning">预警数据</option><option value="sparse">稀疏数据</option></select></div></label>
+                <label>预测周期<div class="input-wrap"><input data-vfh-field="horizon_days" type="number" min="90" max="1095" step="30"><span>天</span></div></label>
+                <label>年增长率<div class="input-wrap"><input data-vfh-field="business_growth_pct" type="number" min="-80" max="300" step="1"><span>%</span></div></label>
+                <label>月需求<div class="input-wrap"><input data-vfh-field="monthly_demand_units" type="number" min="0" step="100"><span>件</span></div></label>
+                <label>平均订单件数<div class="input-wrap"><input data-vfh-field="avg_units_order" type="number" min="0.1" step="0.1"><span>件</span></div></label>
+                <label>当前平均库龄<div class="input-wrap"><input data-vfh-field="current_avg_age_days" type="number" min="0" step="1"><span>天</span></div></label>
+                <label>规划件/托<div class="input-wrap"><input data-vfh-field="planning_units_per_pallet" type="number" min="0" step="0.1"><span>0=自动</span></div></label>
+              </div>
+            </div>
+          </section>
+
+          <section class="control-section decision-control collapsed">
+            <button type="button" class="section-title" aria-expanded="false">海运与虚拟海关 <span>+</span></button>
+            <div class="section-body">
+              <div class="field-grid">
+                <label>整柜/月<div class="input-wrap"><input data-vfh-field="inbound_containers_month" type="number" min="0" step="0.1"><span>柜</span></div></label>
+                <label>每柜件数<div class="input-wrap"><input data-vfh-field="units_per_container" type="number" min="0" step="100"><span>件</span></div></label>
+                <label>海运时效<div class="input-wrap"><input data-vfh-field="sea_lead_days" type="number" min="0" step="1"><span>天</span></div></label>
+                <label>清关时效<div class="input-wrap"><input data-vfh-field="customs_lead_days" type="number" min="0" step="1"><span>天</span></div></label>
+              </div>
+              <p class="field-note">在途和清关库存进入虚拟海关区，用于提前判断未来爆仓风险。</p>
+            </div>
+          </section>
+
+          <section class="control-section decision-control collapsed">
+            <button type="button" class="section-title" aria-expanded="false">A区计费与处理 <span>+</span></button>
+            <div class="section-body"><div class="field-grid">
+              <label>免租期<div class="input-wrap"><input data-vfh-field="a_free_days" type="number" min="0" step="1"><span>天</span></div></label>
+              <label>超期仓储<div class="input-wrap"><input data-vfh-field="a_storage_rate_m3_day" type="number" min="0" step="0.001"><span>/m³/天</span></div></label>
+              <label>整柜卸货<div class="input-wrap"><input data-vfh-field="container_unload_fee" type="number" min="0" step="10"><span>/柜</span></div></label>
+              <label>入库操作<div class="input-wrap"><input data-vfh-field="sku_inbound_fee_pallet" type="number" min="0" step="0.1"><span>/托</span></div></label>
+              <label>出库操作<div class="input-wrap"><input data-vfh-field="sku_outbound_fee_pallet" type="number" min="0" step="0.1"><span>/托</span></div></label>
+            </div></div>
+          </section>
+
+          <section class="control-section decision-control collapsed">
+            <button type="button" class="section-title" aria-expanded="false">B区 / VFH-HUB <span>+</span></button>
+            <div class="section-body"><div class="field-grid">
+              <label>B区面积<div class="input-wrap"><input data-vfh-field="b_area_m2" type="number" min="50" step="50"><span>m²</span></div></label>
+              <label>面积租金<div class="input-wrap"><input data-vfh-field="b_rent_m2_month" type="number" min="0" step="0.1"><span>/m²/月</span></div></label>
+              <label>B区人员<div class="input-wrap"><input data-vfh-field="b_workers" type="number" min="1" step="1"><span>人</span></div></label>
+              <label>月工资<div class="input-wrap"><input data-vfh-field="labor_monthly_cost" type="number" min="0" step="100"><span>/人</span></div></label>
+              <label>加班工资<div class="input-wrap"><input data-vfh-field="overtime_hourly_cost" type="number" min="0" step="1"><span>/小时</span></div></label>
+              <label>加班上限<div class="input-wrap"><input data-vfh-field="overtime_limit_hours_day" type="number" min="0" max="16" step="0.5"><span>小时/天</span></div></label>
+              <label>建设投入<div class="input-wrap"><input data-vfh-field="vfh_setup_cost" type="number" min="0" step="1000"><span>一次性</span></div></label>
+              <label>固定运营<div class="input-wrap"><input data-vfh-field="vfh_fixed_monthly_cost" type="number" min="0" step="100"><span>/月</span></div></label>
+              <label>VFH操作<div class="input-wrap"><input data-vfh-field="vfh_operating_fee_pallet" type="number" min="0" step="0.1"><span>/托</span></div></label>
+              <label>库内转运<div class="input-wrap"><input data-vfh-field="internal_transfer_cost_pallet" type="number" min="0" step="0.1"><span>/托</span></div></label>
+              <label>目标覆盖<div class="input-wrap"><input data-vfh-field="b_target_coverage_days" type="number" min="1" step="1"><span>天</span></div></label>
+              <label>目标利用率<div class="input-wrap"><input data-vfh-field="target_utilization_pct" type="number" min="20" max="99" step="1"><span>%</span></div></label>
+              <label>办公区<div class="input-wrap"><input data-vfh-field="office_percent" type="number" min="0" max="50" step="1"><span>%</span></div></label>
+              <label>休息区<div class="input-wrap"><input data-vfh-field="rest_percent" type="number" min="0" max="50" step="1"><span>%</span></div></label>
+            </div></div>
+          </section>
+
+          <section class="control-section decision-control collapsed">
+            <button type="button" class="section-title" aria-expanded="false">非VFH送仓成本 <span>+</span></button>
+            <div class="section-body"><div class="field-grid">
+              <label>快递占比<div class="input-wrap"><input data-vfh-field="parcel_percent" type="number" min="0" max="100" step="1"><span>%</span></div></label>
+              <label>散托占比<div class="input-wrap"><input data-vfh-field="ltl_percent" type="number" min="0" max="100" step="1"><span>%</span></div></label>
+              <label>整车占比<div class="input-wrap"><input data-vfh-field="ftl_percent" type="number" min="0" max="100" step="1"><span>%</span></div></label>
+              <label>快递费用<div class="input-wrap"><input data-vfh-field="parcel_cost_order" type="number" min="0" step="0.1"><span>/单</span></div></label>
+              <label>散托费用<div class="input-wrap"><input data-vfh-field="ltl_cost_pallet" type="number" min="0" step="1"><span>/托</span></div></label>
+              <label>整车费用<div class="input-wrap"><input data-vfh-field="ftl_cost_load" type="number" min="0" step="10"><span>/车</span></div></label>
+              <label>整车托数<div class="input-wrap"><input data-vfh-field="ftl_pallets_load" type="number" min="1" step="1"><span>托/车</span></div></label>
+              <label>预约等待<div class="input-wrap"><input data-vfh-field="appointment_fee_load" type="number" min="0" step="1"><span>/车</span></div></label>
+              <label>拒收概率<div class="input-wrap"><input data-vfh-field="rejection_rate_pct" type="number" min="0" max="100" step="0.1"><span>%</span></div></label>
+              <label>拒收罚金<div class="input-wrap"><input data-vfh-field="rejection_penalty_event" type="number" min="0" step="10"><span>/次</span></div></label>
+            </div><p class="field-note">三种配送方式占比合计必须为100%。</p></div>
+          </section>
+        </form>
+
+        <div class="panel-actions">
+          <button class="secondary-button" id="apply-layout">预览布局</button>
+          <button class="save-button" id="save-settings">保存方案</button>
+          <button class="primary-button" id="analyze-vfh">分析VFH</button>
+        </div>
+      </aside>
+
+      <section class="stage" aria-label="3D仓库视图">
+        <div class="stage-screen active" id="warehouse-screen">
+          <div id="scene-container"></div>
+          <div class="stage-gradient"></div>
+
+        <div class="kpi-row" aria-live="polite">
+          <article><span>库容托位</span><strong id="kpi-capacity">—</strong><small id="kpi-capacity-sub">等待计算</small></article>
+          <article><span>空间利用率</span><strong id="kpi-space">—</strong><small id="kpi-space-sub">当前库存折算</small></article>
+          <article><span>平均周期</span><strong id="kpi-cycle">—</strong><small id="kpi-cycle-sub">分钟 / 任务</small></article>
+          <article><span>完成率</span><strong id="kpi-completion">—</strong><small id="kpi-risk">尚未运行</small></article>
+        </div>
+
+        <div class="view-hint"><span class="mouse-icon"></span>拖拽旋转 · 滚轮缩放 · 点击对象查看详情</div>
+
+        <aside class="object-card" id="object-card" aria-live="polite">
+          <div class="object-empty">
+            <span class="focus-glyph">⌁</span>
+            <strong>选择一个对象</strong>
+            <p>点击货架、货物、托盘、船舶、海关或作业车辆后显示详细信息。</p>
+          </div>
+        </aside>
+
+          <div class="timeline" id="timeline">
+          <button id="playback-toggle" aria-label="播放或暂停">▶</button>
+          <span id="sim-clock">08:00</span>
+          <input id="sim-progress" type="range" min="0" max="480" value="0" step="1">
+          <span>16:00</span>
+          <select id="playback-speed" aria-label="播放速度"><option value="1">1×</option><option value="4" selected>4×</option><option value="12">12×</option></select>
+          </div>
+        </div>
+
+        <div class="stage-screen decision-screen" id="decision-screen">
+          <div class="decision-scroll">
+            <header class="decision-hero">
+              <div><p class="overline">FORWARD HUB DECISION / <span id="decision-country">DEMO-EUROPE</span></p><h2 id="decision-title">正在建立经营决策模型…</h2><p id="decision-subtitle">对比货主自行送仓与平台前置仓两种模式。</p></div>
+              <div class="decision-status"><span id="decision-density">预警数据</span><strong id="decision-band">情景区间 ±18%</strong></div>
+            </header>
+
+            <nav class="decision-tabs" aria-label="VFH分析页面">
+              <button class="active" data-decision-page="overview">决策总览</button>
+              <button data-decision-page="costs">成本结构</button>
+              <button data-decision-page="inventory">库存与批次</button>
+            </nav>
+
+            <div class="decision-page active" data-page="overview">
+              <div class="decision-kpis">
+                <article><span>预计年度节省</span><strong id="vfh-saving">—</strong><small id="vfh-saving-sub">等待分析</small></article>
+                <article><span>建议B区面积</span><strong id="vfh-area">—</strong><small id="vfh-area-sub">含办公与休息区</small></article>
+                <article><span>建议B区人员</span><strong id="vfh-workers">—</strong><small id="vfh-workers-sub">常规班次</small></article>
+                <article><span>可支撑月业务量</span><strong id="vfh-scale">—</strong><small id="vfh-scale-sub">空间与人员联合约束</small></article>
+              </div>
+              <div class="decision-grid">
+                <article class="analysis-card cost-compare-card">
+                  <header><div><span class="card-kicker">COST COMPARISON</span><h3>两种模式总成本</h3></div><span id="cost-period">365天</span></header>
+                  <div id="cost-comparison" class="cost-comparison"></div>
+                </article>
+                <article class="analysis-card action-card">
+                  <header><div><span class="card-kicker">RECOMMENDATION</span><h3>建议动作</h3></div></header>
+                  <div id="decision-actions" class="decision-actions"></div>
+                </article>
+                <article class="analysis-card forecast-card">
+                  <header><div><span class="card-kicker">CAPACITY FORECAST</span><h3>B区利用率与积压风险</h3></div><span>海运 + 海关 + A/B库存</span></header>
+                  <div id="forecast-chart" class="forecast-chart"></div>
+                </article>
+                <article class="analysis-card options-card">
+                  <header><div><span class="card-kicker">SCENARIO OPTIONS</span><h3>面积与人员候选方案</h3></div></header>
+                  <div class="data-table" id="scenario-options"></div>
+                </article>
+              </div>
+            </div>
+
+            <div class="decision-page" data-page="costs">
+              <div class="decision-grid cost-grid">
+                <article class="analysis-card"><header><div><span class="card-kicker">WITHOUT VFH</span><h3>供应商自行送亚马逊</h3></div><strong id="without-cost-total">—</strong></header><div id="without-costs" class="breakdown-list"></div></article>
+                <article class="analysis-card"><header><div><span class="card-kicker">WITH VFH</span><h3>VFH-HUB模式</h3></div><strong id="with-cost-total">—</strong></header><div id="with-costs" class="breakdown-list"></div></article>
+                <article class="analysis-card wide-card"><header><div><span class="card-kicker">MODEL BOUNDARY</span><h3>费用边界与计费逻辑</h3></div></header><div class="logic-flow"><span>海运在途</span><i>→</i><span>虚拟海关</span><i>→</i><span>A区库龄计费</span><i>→</i><span>A→B库内转运</span><i>→</i><span>平台货权</span></div><div id="model-warnings" class="warning-list"></div></article>
+              </div>
+            </div>
+
+            <div class="decision-page" data-page="inventory">
+              <div class="pipeline-grid" id="inventory-pipeline"></div>
+              <article class="analysis-card"><header><div><span class="card-kicker">BATCH AGING</span><h3>批次库存与A区计费状态</h3></div><div class="batch-tools"><span id="batch-source-label">SKU数量真实 · 入库日期为情景假设</span><button type="button" class="table-tool" id="download-batch-template">下载CSV模板</button><button type="button" class="table-tool primary" id="import-batches">导入批次CSV</button><input id="batch-file" type="file" accept=".csv,text/csv" hidden></div></header><div class="data-table batch-table" id="batch-table"></div></article>
+              <article class="analysis-card"><header><div><span class="card-kicker">SLOT POLICY</span><h3>SKU货架 / 地堆建议</h3></div><span>可在SKU库修正尺寸与打托规格</span></header><div class="data-table sku-policy-table" id="sku-policy-table"></div></article>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <aside class="sku-drawer" id="sku-drawer" aria-hidden="true">
+    <div class="drawer-head">
+      <div><p class="overline">MASTER DATA</p><h2>SKU 数据库</h2><span id="sku-count">载入中</span></div>
+      <button class="icon-button" id="close-sku" aria-label="关闭">×</button>
+    </div>
+    <div class="search-box"><span>⌕</span><input id="sku-search" type="search" placeholder="搜索SKU、品名或品类"></div>
+    <div class="sku-table-head"><span>SKU / 品类</span><span>尺寸 cm</span><span>打托</span></div>
+    <div class="sku-list" id="sku-list"></div>
+  </aside>
+  <div class="drawer-scrim" id="drawer-scrim"></div>
+
+  <dialog id="sku-dialog">
+    <form method="dialog" id="sku-form">
+      <div class="modal-head"><div><p class="overline">SKU PROFILE</p><h2 id="sku-dialog-title">编辑SKU</h2></div><button type="button" class="icon-button modal-close" aria-label="关闭">×</button></div>
+      <input type="hidden" name="code">
+      <div class="modal-section"><h3>商品信息</h3><div class="modal-grid">
+        <label class="wide">品名<input name="name" required></label>
+        <label>品类<input name="category" required></label>
+        <label>存储策略<select name="storage_type"><option value="flexible">灵活存放</option><option value="shelf_only">仅货架</option><option value="floor_only">仅地堆</option></select></label>
+        <label>长度 cm<input name="length_cm" type="number" min="0.1" step="0.1" required></label>
+        <label>宽度 cm<input name="width_cm" type="number" min="0.1" step="0.1" required></label>
+        <label>高度 cm<input name="height_cm" type="number" min="0.1" step="0.1" required></label>
+        <label>重量 kg<input name="weight_kg" type="number" min="0" step="0.1" required></label>
+      </div></div>
+      <div class="modal-section"><h3>打托规格</h3><div class="modal-grid">
+        <label>托盘长 cm<input name="pallet_length_cm" type="number" min="40" step="1" required></label>
+        <label>托盘宽 cm<input name="pallet_width_cm" type="number" min="40" step="1" required></label>
+        <label>最大堆高 cm<input name="max_stack_height_cm" type="number" min="30" step="1" required></label>
+        <label>每层件数<input name="units_per_layer" type="number" min="1" step="1" required></label>
+        <label>码放层数<input name="layers_per_pallet" type="number" min="1" step="1" required></label>
+        <label>每托件数<input name="units_per_pallet" type="number" min="1" step="1" required></label>
+        <label class="check-field"><input name="rotation_allowed" type="checkbox">允许旋转摆放</label>
+      </div></div>
+      <div class="modal-section pallet-preview-section">
+        <div class="pallet-preview-head"><div><h3>3D打托模拟</h3><p>按照SKU外箱尺寸、托盘规格、每层件数与层数等比例生成。</p></div><button type="button" class="secondary-button" id="auto-palletize">按尺寸自动计算</button></div>
+        <div class="pallet-preview-layout">
+          <div id="pallet-preview-canvas" aria-label="SKU三维打托预览"></div>
+          <div class="pallet-preview-stats" id="pallet-preview-stats"><p>打开SKU后生成真实比例预览。</p></div>
+        </div>
+      </div>
+      <div class="modal-actions"><button type="button" class="secondary-button modal-close">取消</button><button type="submit" value="default" class="primary-button">保存SKU</button></div>
+    </form>
+  </dialog>
+
+  <div class="toast" id="toast" role="status"></div>
+</body>
+</html>

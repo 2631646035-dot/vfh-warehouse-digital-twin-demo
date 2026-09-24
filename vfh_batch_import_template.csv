@@ -1,0 +1,5 @@
+batch_id,sku_code,receipt_date,qty,zone,status,unit_volume_m3
+DEMO-2026-001,DEMO-MW-01,2026-08-01,480,A,active,0.0585
+DEMO-SEA-002,DEMO-TV-02,2026-09-18,1200,SEA,active,0.0478
+DEMO-CUS-003,DEMO-AC-03,2026-09-20,800,CUSTOMS,active,0.0599
+DEMO-HUB-004,DEMO-RF-04,2026-09-10,180,B,active,0.2210
